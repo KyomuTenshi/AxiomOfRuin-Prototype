@@ -17,6 +17,10 @@ namespace SG {
         protected override void Update()
         {
             base.Update();
+            
+            // Если мы не являемся владельцем этого игрового объекта, мы не управляем им и не редактируем его
+            if (!IsOwner)
+            return;
 
             // Обработать перемещение (управлять движением)
             playerLocomotionManager.HandleAllMovement();

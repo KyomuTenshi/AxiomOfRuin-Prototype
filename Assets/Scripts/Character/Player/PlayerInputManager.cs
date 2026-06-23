@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -5,11 +6,13 @@ namespace SG {
     public class PlayerInputManager : MonoBehaviour
     {
         public static PlayerInputManager instance;
-        // Думайте о целях поэтапно (разбивайте задачу на шаги):
-        // 2. Двигать персонажа на основе этих значений
+        
         PlayerControls playerControls;
 
         [SerializeField] Vector2 movementInput;
+        public float verticalInput;
+        public float horizontalInput;
+        public float moveAmount;
 
         private void Awake()
         {
@@ -27,42 +30,101 @@ namespace SG {
         {
             DontDestroyOnLoad(gameObject);
 
-            // Когда сцена меняется, выполнить эту логику
+            // Подписываемся на событие смены сцены
             SceneManager.activeSceneChanged += OnSceneChange;
 
-            instance.enabled = false;
-        }
-
-        private void OnSceneChange(Scene oldScene, Scene newScene)
-        {
-            // Если мы загружаемся в сцену нашего игрового мира, включить управление игрока
-            if (newScene.buildIndex == WorldSaveGameManager.instance.GetWorldSceneIndex())
+            // Проверяем: если мы ЗАПУСТИЛИ игру сразу в рабочем мире (для тестов в редакторе)
+            if (WorldSaveGameManager.instance != null && 
+                SceneManager.GetActiveScene().buildIndex == WorldSaveGameManager.instance.GetWorldSceneIndex())
             {
                 instance.enabled = true;
             }
-            // В противном случае мы, должно быть, находимся в главном меню, отключить управление игрока
-            // Это нужно для того, чтобы наш игрок не мог двигаться, если мы заходим в такие интерфейсы, как меню создания персонажа и т.д.
             else
             {
-                instance.enabled = false;
+                instance.enabled = false; // Выключаем, если мы в главном меню
             }
         }
-                
+
         private void OnEnable()
         {
             if (playerControls == null)
             {
                 playerControls = new PlayerControls();
-
+                
+                // Подписка на выполнение движения
                 playerControls.PlayerMovement.Movement.performed += i => movementInput = i.ReadValue<Vector2>();
+                // ОБЯЗАТЕЛЬНО: сброс ввода в ноль при отпускании клавиш (в гайде Себастьян это делает)
+                playerControls.PlayerMovement.Movement.canceled += i => movementInput = Vector2.zero;
             }
 
-        playerControls.Enable();
+            playerControls.Enable();
         }
+
+        private void OnDisable()
+        {
+            if (playerControls != null)
+            {
+                playerControls.Disable();
+            }
+        }
+
         private void OnDestroy()
         {
-            // Если мы уничтожаем этот объект, отписаться от этого события
+            // Отписываемся от события при уничтожении объекта
             SceneManager.activeSceneChanged -= OnSceneChange;
+        }
+
+        private void OnSceneChange(Scene oldScene, Scene newScene)
+        {
+            // Включаем или выключаем скрипт при переходе между сценами
+            if (WorldSaveGameManager.instance != null && 
+                newScene.buildIndex == WorldSaveGameManager.instance.GetWorldSceneIndex())
+            {
+                instance.enabled = true;
+            }
+            else
+            {
+                instance.enabled = false;
+            }
+        }
+
+        // ИСПРАВЛЕНО: Теперь ввод корректно блокируется/разблокируется в зависимости от фокуса окна игры
+        private void OnApplicationFocus(bool focus)
+        {
+            if (playerControls == null) return;
+
+            if (enabled && focus)
+            {
+                playerControls.Enable();
+            }
+            else
+            {
+                playerControls.Disable();
+            }
+        }
+
+        private void Update()
+        {
+            HandleMovementInput();
+        }
+
+        private void HandleMovementInput()
+        {
+            verticalInput = movementInput.y;
+            horizontalInput = movementInput.x;
+
+            // Расчет силы движения (Math.Abs убран в пользу Mathf.Abs для Unity типов)
+            moveAmount = Mathf.Clamp01(Mathf.Abs(verticalInput) + Mathf.Abs(horizontalInput));
+
+            // Клампинг под анимации (0, 0.5, 1)
+            if (moveAmount <= 0.5f && moveAmount > 0)
+            {
+                moveAmount = 0.5f;
+            }
+            else if (moveAmount > 0.5f && moveAmount <= 1)
+            {
+                moveAmount = 1f;
+            }
         }
     }
 }
