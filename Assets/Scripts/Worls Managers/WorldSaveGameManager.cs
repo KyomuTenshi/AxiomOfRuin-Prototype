@@ -36,5 +36,10 @@ namespace SG
 
             yield return loadOperation;
         }
+
+        public int GetWorldSceneIndex()
+        {
+            return worldSceneIndex;
+        }
     }
 }
