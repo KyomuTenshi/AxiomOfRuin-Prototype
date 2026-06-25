@@ -24,6 +24,26 @@ namespace SG {
 
             // Обработать перемещение (управлять движением)
             playerLocomotionManager.HandleAllMovement();
-        }   
+        }
+
+        protected override void LateUpdate()
+        {
+            if (!IsOwner)
+                return;
+
+            base.LateUpdate();
+            
+            PlayerCamera.instance.HandleAllCameraAction();
+        }
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkDespawn();
+
+            // ЕСЛИ ЭТО ОБЪЕКТ ИГРОКА, КОТОРЫМ ВЛАДЕЕТ ЭТОТ КЛИЕНТ
+            if (IsOwner)
+            {
+                PlayerCamera.instance.player = this;
+            }
+        }
     }
 }

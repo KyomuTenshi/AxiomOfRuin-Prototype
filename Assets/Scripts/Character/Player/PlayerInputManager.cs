@@ -9,10 +9,16 @@ namespace SG {
         
         PlayerControls playerControls;
 
+        [Header("MOVEMENT INPUT")]
         [SerializeField] Vector2 movementInput;
         public float verticalInput;
         public float horizontalInput;
         public float moveAmount;
+
+        [Header("Camera MOVEMENT INPUT")]
+        [SerializeField] Vector2 cameraInput;
+        public float cameraVerticalInput;
+        public float cameraHorizontalInput;
 
         private void Awake()
         {
@@ -53,6 +59,7 @@ namespace SG {
                 
                 // Подписка на выполнение движения
                 playerControls.PlayerMovement.Movement.performed += i => movementInput = i.ReadValue<Vector2>();
+                playerControls.PlayerCamera.Movement.performed += i => cameraInput = i.ReadValue<Vector2>();
                 // ОБЯЗАТЕЛЬНО: сброс ввода в ноль при отпускании клавиш (в гайде Себастьян это делает)
                 playerControls.PlayerMovement.Movement.canceled += i => movementInput = Vector2.zero;
             }
@@ -105,10 +112,11 @@ namespace SG {
 
         private void Update()
         {
-            HandleMovementInput();
+            HandlePlayerMovementInput();
+            HandleCameraMovementInput();
         }
 
-        private void HandleMovementInput()
+        private void HandlePlayerMovementInput()
         {
             verticalInput = movementInput.y;
             horizontalInput = movementInput.x;
@@ -125,6 +133,12 @@ namespace SG {
             {
                 moveAmount = 1f;
             }
+        }
+
+        private  void HandleCameraMovementInput()
+        {
+            cameraVerticalInput = cameraInput.y;
+            cameraHorizontalInput = cameraInput.x;
         }
     }
 }
